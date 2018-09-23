@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+	<meta charset="UTF-8">
+	<title>Danilo's TODO List</title>
+	<!-- Compiled and minified CSS -->
+    	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+
+    	<!-- Compiled and minified JavaScript -->
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+	<!--Import Google Icon Font-->
+        <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+	
+	<style>
+	@import url('https://fonts.googleapis.com/css?family=Lobster');
+	body {
+		background-color: #fafafa;
+	}
+
+	.card-panel {
+		border-radius: 40px;
+	}
+	
+	.box-tarefas {
+		height: 100vh;
+		border-radius: 20px;
+	}
+
+	.input-field label {
+    		text-align: center;
+    		width: 100%;
+	}
+	
+	.input-field label:not(.label-icon).active {
+    		-webkit-transform-origin: center;
+    		transform-origin: center;
+	}
+
+	.input-field.col label {
+		left: 0;
+	}
+	</style>
+
+	<script>
+
+
+
+	window.indexedDB = window.indexedDB || window.mozIndexedDB ||
+	window.webkitIndexedDB || window.msIndexedDB;
+
+	window.IDBTransaction = window.IDBTransaction || window.webkitIDBTransaction ||
+	window.msIDBTransaction;
+	
+	window.IDBKeyRange = window.IDBKeyRange || window.webkitIDBKeyRange ||
+	window.msIDBKeyRange
+
+	if (!window.indexedDB){
+		window.alert("Não suportado");
+	}
+
+	var db;
+	var request = window.indexedDB.open("Tarefas", 1);
+
+	request.onerror = function(event){
+		console.log("erro: ");
+	};
+
+	request.onsuccess = function(event){
+		db = request.result;
+		console.log("sucesso: " + db);
+		listaTarefa();
+	};
+
+	request.onupgradeneeded = function(event){
+		var db = event.target.result;
+		var objectStore = db.createObjectStore("TBL_TAREFAS", {keyPath: "id", autoIncrement: true});
+		objectStore.add({ tarefa: "tarefa teste" });	
+	};	
+
+	function adicionaTarefa(){
+		var request = db.transaction(["TBL_TAREFAS"], "readwrite")
+		.objectStore("TBL_TAREFAS")
+		.add({tarefa: $('#tarefa').val()  });
+
+		request.onsuccess = function(event){
+			console.log("Tarefa adicionada");
+		};
+		
+		request.onerror = function(event){
+			alert("Ops...Algo deu errado!");
+		};
+	}
+
+	function removeTarefa(id){
+		var request = db.transaction(["TBL_TAREFAS"], "readwrite")
+		.objectStore("TBL_TAREFAS")
+		.delete(Number(id));
+
+		request.onsuccess = function(event){
+			console.log("Registro removido com sucesso!");
+		};
+	};
+
+	function listaTarefa(){
+		var objectStore = db.transaction("TBL_TAREFAS").objectStore("TBL_TAREFAS");
+
+		$('.box-tarefas').empty(); 
+		objectStore.openCursor().onsuccess = function(event){
+			var cursor = event.target.result;
+
+			if(cursor){
+				$('.box-tarefas').append("<div id='" +cursor.value.id+ "' class='card-panel scale-transition'><i class='material-icons tiny'>arrow_forward</i>   " + cursor.value.tarefa + "</div>"); 
+				cursor.continue();
+			}
+		};
+	}
+
+
+	$(document).ready(function(){
+		$('#tarefa').on('keypress', function (e) {
+ 			if(e.which === 13){
+				adicionaTarefa();
+				
+				$('.box-tarefas').append("<div class='card-panel scale-transition'><i class='material-icons tiny'>arrow_forward</i>   " + $('#tarefa').val() + "</div>"); 
+			//	$(this).val("");
+	 		}
+	 	});
+		
+		$(document).on("click",".card-panel",function(){
+    			$(this).remove();
+			removeTarefa($(this).attr("id"));
+		});
+	});
+	</script>
+</head>
+<body>
+	<div class="container">
+		<div class="row">
+			<div class="col s12">
+				<h1 class="center-align">Danilo's TODO List</h1>
+			</div>
+		</div>
+		<div class="row">
+			<div class="col s12">
+				<div class="input-field col s6 offset-s3">
+          				<input id="tarefa" type="text" class="validate center-align">
+          				<label for="tarefa" class="center-align">Tarefa</label>
+				</div>
+			</div>
+		</div>
+		<div class="row">
+			<div class="col s12 light-green lighten-4 box-tarefas">
+		
+			</div>
+		</div>
+	</div>
+
+</body>
+</html>
